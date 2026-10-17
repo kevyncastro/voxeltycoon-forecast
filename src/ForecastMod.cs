@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using VoxelTycoon;
 using VoxelTycoon.Modding;
 using VoxelTycoon.Serialization;
@@ -17,7 +18,20 @@ namespace ForecastMod
 
         protected override void Initialize()
         {
-            _logger.Log("Tycoon Forecast loaded.");
+            _logger.Log("Tycoon Forecast " + Version + " loaded.");
+        }
+
+        /// <summary>The &lt;Version&gt; from ForecastMod.csproj, e.g. "0.1.0".</summary>
+        public static string Version
+        {
+            get
+            {
+                var attr = (AssemblyInformationalVersionAttribute)Attribute.GetCustomAttribute(
+                    typeof(ForecastMod).Assembly, typeof(AssemblyInformationalVersionAttribute));
+                string v = attr?.InformationalVersion ?? typeof(ForecastMod).Assembly.GetName().Version.ToString();
+                int plus = v.IndexOf('+'); // drop the "+<commit hash>" the SDK may append
+                return plus >= 0 ? v.Substring(0, plus) : v;
+            }
         }
 
         protected override void OnGameStarted()

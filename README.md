@@ -30,6 +30,19 @@ The project compiles against the game's own DLLs in `VoxelTycoon_Data\Managed`, 
 
 `%USERPROFILE%\AppData\LocalLow\VoxelTycoon\VoxelTycoon\Player.log`. Search it for `[ForecastMod]`.
 
+## Versioning
+
+There are two separate version numbers:
+
+| What | Where | When to change it |
+|---|---|---|
+| **Mod version** (`0.1.0`) | `<Version>` in `ForecastMod.csproj` | Every release. Shown in `Player.log` as `Tycoon Forecast 0.1.0 loaded.` |
+| **Save data version** (`1`) | `SaveVersion` in `src/History.cs` | Only when the data written into savegames changes. `Read()` must still handle every older version. |
+
+To release:
+1. Bump `<Version>` and move the `[Unreleased]` notes in `CHANGELOG.md` under the new version.
+2. Commit, then tag: `git tag v0.2.0` and `git push origin main --tags`.
+
 ## Roadmap
 
 1. Data collection and log reports (current)
