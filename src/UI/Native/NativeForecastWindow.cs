@@ -64,7 +64,7 @@ namespace ForecastMod.UI.Native
         protected override void InitializeFrame()
         {
             base.InitializeFrame();
-            Title = "Tycoon Forecast";
+            Title = "Voxel Forecast";
             Width = ContentWidth;
 
             _finance = AddScrollTab("Finance", "");    // chart-line

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Tycoon Forecast. Versions follow [Semantic Versioning](https://semver.org/):
+All notable changes to Voxel Forecast. Versions follow [Semantic Versioning](https://semver.org/):
 - **MAJOR**: breaks existing saves or removes features
 - **MINOR**: new features
 - **PATCH**: bug fixes

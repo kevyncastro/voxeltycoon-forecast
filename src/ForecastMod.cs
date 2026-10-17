@@ -25,7 +25,7 @@ namespace ForecastMod
 
         protected override void Initialize()
         {
-            _logger.Log("Tycoon Forecast " + Version + " loaded.");
+            _logger.Log("Voxel Forecast " + Version + " loaded.");
         }
 
         /// <summary>The &lt;Version&gt; from ForecastMod.csproj, e.g. "0.1.0".</summary>

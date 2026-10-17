@@ -1,6 +1,6 @@
-# Tycoon Forecast (Voxel Tycoon mod)
+# Voxel Forecast (Voxel Tycoon mod)
 
-Records your company's finances, city demand and production chains, and (in later stages) forecasts where they are heading.
+Records your company's finances, city demand and production chains, and forecasts where they are heading.
 
 ## Build
 
@@ -43,7 +43,8 @@ forecast window. It refreshes once per in-game day while open. **Shift+F6** open
   between the two tabs and stay set while the window is open.
 - **Click a card** (a store, mine, factory or warehouse) to move the camera to that building and open its window.
 The same reports are also written to `Player.log` when you load a save and at each month end.
-| `mod.json` | Pack metadata. The game skips any `Content` folder without one. |
+| `mod.json` | Pack metadata. The game skips any `Content` folder without one. `Tags` must come from the game's fixed list (e.g. `Utils`, `Gameplay`, `Other`), or Workshop publishing fails its check. |
+| `preview.png` | Image for the mod list and Steam Workshop (square, 512x512 or more, 1 MB at most). Edit `art/preview.html`, then run `art/render-preview.ps1`. |
 
 ## Where to see output
 
@@ -55,8 +56,8 @@ There are two separate version numbers:
 
 | What | Where | When to change it |
 |---|---|---|
-| **Mod version** (`0.1.0`) | `<Version>` in `ForecastMod.csproj` | Only for Steam Workshop releases. Fixed at `0.1.0` during initial development. Shown in `Player.log` as `Tycoon Forecast 0.1.0 loaded.` |
-| **Save data version** (`1`) | `SaveVersion` in `src/History.cs` | Only when the data written into savegames changes. `Read()` must still handle every older version. |
+| **Mod version** (`0.1.0`) | `<Version>` in `ForecastMod.csproj` | Only for Steam Workshop releases. Fixed at `0.1.0` during initial development. Shown in `Player.log` as `Voxel Forecast 0.1.0 loaded.` |
+| **Save data version** (`2`) | `SaveVersion` in `src/History.cs` | Only when the data written into savegames changes. `Read()` must still handle every older version. |
 
 During development, add each change under `[Unreleased]` in `CHANGELOG.md`; no version bumps or tags.
 

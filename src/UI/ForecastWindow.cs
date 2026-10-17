@@ -109,7 +109,7 @@ namespace ForecastMod.UI
 
             float scale = UiScale;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
-            _rect = GUI.Window(WindowId, _rect, DrawWindow, "Tycoon Forecast (classic)   (Shift+F6 to close)");
+            _rect = GUI.Window(WindowId, _rect, DrawWindow, "Voxel Forecast (classic)   (Shift+F6 to close)");
             _rect.x = Mathf.Clamp(_rect.x, 0, Screen.width / scale - _rect.width);
             _rect.y = Mathf.Clamp(_rect.y, 0, Screen.height / scale - _rect.height);
         }

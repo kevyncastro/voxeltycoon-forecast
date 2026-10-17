@@ -45,12 +45,14 @@
 
   <ItemGroup>
     <None Include="mod.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Mod list / Steam Workshop image. Square PNG, at least 512x512, at most 1 MB. Source: art/preview.html. -->
+    <None Include="preview.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- After every build, copy the mod into the game's Content folder so the game picks it up. -->
   <Target Name="DeployToGame" AfterTargets="Build">
     <ItemGroup>
-      <DeployFiles Include="$(OutDir)ForecastMod.dll;$(OutDir)ForecastMod.pdb;$(OutDir)mod.json" />
+      <DeployFiles Include="$(OutDir)ForecastMod.dll;$(OutDir)ForecastMod.pdb;$(OutDir)mod.json;$(OutDir)preview.png" />
     </ItemGroup>
     <Copy SourceFiles="@(DeployFiles)" DestinationFolder="$(VTGameDir)\Content\$(VTModFolder)" SkipUnchangedFiles="true" />
     <Message Importance="high" Text="Deployed to $(VTGameDir)\Content\$(VTModFolder)" />

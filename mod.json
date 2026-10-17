@@ -1,5 +1,5 @@
 {
-  "Title": "Tycoon Forecast",
+  "Title": "Voxel Forecast",
   "Description": "Records your company's finances, city demand and production, and forecasts where they are heading.",
-  "Tags": [ "Script" ]
+  "Tags": [ "Utils", "Gameplay" ]
 }

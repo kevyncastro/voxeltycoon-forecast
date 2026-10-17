@@ -137,7 +137,7 @@ namespace ForecastMod
             Clear();
             int version = reader.ReadInt();
             if (version > SaveVersion)
-                throw new InvalidOperationException("Save was made with a newer Tycoon Forecast (data version " + version + ").");
+                throw new InvalidOperationException("Save was made with a newer Voxel Forecast (data version " + version + ").");
 
             // Stored separately so a game update that adds budget categories doesn't break old saves.
             int savedBudgetCount = reader.ReadInt();
