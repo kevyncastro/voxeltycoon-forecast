@@ -35,6 +35,10 @@
     <Reference Include="$(VTManaged)\UnityEngine.dll" Private="false" />
     <Reference Include="$(VTManaged)\UnityEngine.CoreModule.dll" Private="false" />
     <Reference Include="$(VTManaged)\UnityEngine.UI.dll" Private="false" />
+    <Reference Include="$(VTManaged)\UnityEngine.UIModule.dll" Private="false" />
+    <Reference Include="$(VTManaged)\UnityEngine.IMGUIModule.dll" Private="false" />
+    <Reference Include="$(VTManaged)\UnityEngine.InputLegacyModule.dll" Private="false" />
+    <Reference Include="$(VTManaged)\UnityEngine.TextRenderingModule.dll" Private="false" />
     <Reference Include="$(VTManaged)\VoxelTycoon.dll" Private="false" />
     <Reference Include="$(VTManaged)\0Harmony.dll" Private="false" />
   </ItemGroup>

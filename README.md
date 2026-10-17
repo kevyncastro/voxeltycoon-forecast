@@ -28,6 +28,13 @@ The project compiles against the game's own DLLs in `VoxelTycoon_Data\Managed`, 
 | `src/Forecast/FinanceForecast.cs` | 12-month cash projection, 80% range and negative-cash warnings. |
 | `src/Forecast/DemandForecast.cs` | City demand outlook (level up/down, closing) from the game's rules, plus per-item totals. |
 | `src/Forecast/ProductionForecast.cs` | Mine/factory utilization and bottlenecks, deposit depletion, warehouse trends, item balance. |
+| `src/UI/ForecastWindow.cs` | The in-game window (F6): Finance, Demand and Production tabs. Unity IMGUI, plus an invisible UI panel that stops clicks reaching the map. |
+| `src/UI/ChartTexture.cs` | Draws line charts with a shaded range into a texture. |
+
+## Using it in-game
+
+Press **F6** to open or close the forecast window. It refreshes once per in-game day while open.
+The same reports are also written to `Player.log` when you load a save and at each month end.
 | `mod.json` | Pack metadata. The game skips any `Content` folder without one. |
 
 ## Where to see output
@@ -54,5 +61,5 @@ To release on Steam:
 1. Data collection and log reports (done)
 2. Finance forecast (Holt smoothing, runway) (done, logged only)
 3. Demand forecast (coverage, level-up needs, closing risk) (done, logged only)
-4. Production chains (utilization, bottlenecks, item balance, storage time-to-empty) (current, logged only)
-5. In-game window with charts
+4. Production chains (utilization, bottlenecks, item balance, storage time-to-empty) (done)
+5. In-game window with charts (current)

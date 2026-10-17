@@ -1,6 +1,9 @@
 using System;
 using System.Reflection;
+using ForecastMod.UI;
+using UnityEngine;
 using VoxelTycoon;
+using Logger = VoxelTycoon.Logger;
 using VoxelTycoon.Modding;
 using VoxelTycoon.Serialization;
 
@@ -15,6 +18,7 @@ namespace ForecastMod
         private readonly Logger _logger = new Logger("ForecastMod");
         private readonly History _history = new History();
         private Sampler _sampler;
+        private GameObject _windowObject;
 
         protected override void Initialize()
         {
@@ -38,6 +42,23 @@ namespace ForecastMod
         {
             _sampler = new Sampler(_history, _logger);
             _sampler.Start();
+
+            try
+            {
+                // Lives in the game scene, so it is destroyed when you leave or reload the game.
+                _windowObject = new GameObject("ForecastMod.Window");
+                _windowObject.AddComponent<ForecastWindow>().History = _history;
+                _logger.Log("Forecast window ready. Press " + ForecastWindow.ToggleKey + " in-game to open it.");
+            }
+            catch (Exception e)
+            {
+                _logger.LogException(e);
+            }
+        }
+
+        protected override void Deinitialize()
+        {
+            if (_windowObject != null) UnityEngine.Object.Destroy(_windowObject);
         }
 
         protected override void OnLateUpdate()

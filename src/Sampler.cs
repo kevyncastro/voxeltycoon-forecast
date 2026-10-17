@@ -243,7 +243,7 @@ namespace ForecastMod
             _logger.Log(sb.ToString());
         }
 
-        private static string Describe(DemandForecastEntry e)
+        internal static string Describe(DemandForecastEntry e)
         {
             string when = e.DaysUntil is int days ? " in ~" + days + " days" : "";
             switch (e.Outlook)
@@ -323,7 +323,7 @@ namespace ForecastMod
             _logger.Log(sb.ToString());
         }
 
-        private static string Duration(int days)
+        internal static string Duration(int days)
         {
             if (days >= 720) return "about " + (days / 360) + " years";
             if (days >= 60) return "about " + (days / 30) + " months";
