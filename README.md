@@ -56,14 +56,15 @@ There are two separate version numbers:
 
 | What | Where | When to change it |
 |---|---|---|
-| **Mod version** (`0.1.0`) | `<Version>` in `ForecastMod.csproj` | Only for Steam Workshop releases. Fixed at `0.1.0` during initial development. Shown in `Player.log` as `Voxel Forecast 0.1.0 loaded.` |
+| **Mod version** (`1.0.0`) | `<Version>` in `ForecastMod.csproj` | Each Steam Workshop release: patch for fixes, minor for new features, major if old saves break. Shown in `Player.log` as `Voxel Forecast 1.0.0 loaded.` |
 | **Save data version** (`2`) | `SaveVersion` in `src/History.cs` | Only when the data written into savegames changes. `Read()` must still handle every older version. |
 
-During development, add each change under `[Unreleased]` in `CHANGELOG.md`; no version bumps or tags.
+Between releases, add each change under `[Unreleased]` in `CHANGELOG.md`.
 
 To release on Steam:
 1. Set `<Version>` and move the `[Unreleased]` notes in `CHANGELOG.md` under that version.
-2. Commit, then tag: `git tag v1.0.0` and `git push origin main --tags`.
+2. Commit, then tag: `git tag v1.1.0` and `git push origin main --tags`.
+3. Publish the update from the game, and paste the new changelog section as the Workshop change note.
 
 ## Roadmap
 

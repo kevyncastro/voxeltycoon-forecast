@@ -28,7 +28,7 @@ namespace ForecastMod
             _logger.Log("Voxel Forecast " + Version + " loaded.");
         }
 
-        /// <summary>The &lt;Version&gt; from ForecastMod.csproj, e.g. "0.1.0".</summary>
+        /// <summary>The &lt;Version&gt; from ForecastMod.csproj, e.g. "1.0.0".</summary>
         public static string Version
         {
             get
