@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Where Voxel Tycoon is installed. Override with: dotnet build -p:VTGameDir="X:\path\to\VoxelTycoon" -->
+    <VTGameDir Condition="'$(VTGameDir)' == ''">D:\Steam\steamapps\common\VoxelTycoon</VTGameDir>
+    <VTManaged>$(VTGameDir)\VoxelTycoon_Data\Managed</VTManaged>
+    <!-- Folder name inside the game's Content directory. This is also the mod's pack id. -->
+    <VTModFolder>ForecastMod</VTModFolder>
+
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>ForecastMod</AssemblyName>
+    <RootNamespace>ForecastMod</RootNamespace>
+    <Nullable>disable</Nullable>
+
+    <!-- Compile against the game's own mscorlib (Unity's Mono) instead of a .NET Framework targeting pack. -->
+    <NoStdLib>true</NoStdLib>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
+    <FrameworkPathOverride>$(VTManaged)</FrameworkPathOverride>
+    <BypassFrameworkInstallChecks>true</BypassFrameworkInstallChecks>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="$(VTManaged)\mscorlib.dll" Private="false" />
+    <Reference Include="$(VTManaged)\System.dll" Private="false" />
+    <Reference Include="$(VTManaged)\System.Core.dll" Private="false" />
+    <Reference Include="$(VTManaged)\netstandard.dll" Private="false" />
+    <Reference Include="$(VTManaged)\UnityEngine.dll" Private="false" />
+    <Reference Include="$(VTManaged)\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="$(VTManaged)\UnityEngine.UI.dll" Private="false" />
+    <Reference Include="$(VTManaged)\VoxelTycoon.dll" Private="false" />
+    <Reference Include="$(VTManaged)\0Harmony.dll" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="mod.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- After every build, copy the mod into the game's Content folder so the game picks it up. -->
+  <Target Name="DeployToGame" AfterTargets="Build">
+    <ItemGroup>
+      <DeployFiles Include="$(OutDir)ForecastMod.dll;$(OutDir)ForecastMod.pdb;$(OutDir)mod.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DeployFiles)" DestinationFolder="$(VTGameDir)\Content\$(VTModFolder)" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Deployed to $(VTGameDir)\Content\$(VTModFolder)" />
+  </Target>
+
+</Project>
