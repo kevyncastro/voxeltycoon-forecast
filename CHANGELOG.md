@@ -14,3 +14,6 @@ The version stays at 0.1.0 during initial development. All changes are listed un
 - History is seeded from the game's previous budget month when the mod is added to an existing save.
 - Monthly log reports for finance, city demand and production (mines and factories).
 - Mod version shown in the game log on load.
+- Finance forecast: 12-month projection of recurring net income and cash, with an 80% range and
+  warnings when cash may go negative. Uses Holt smoothing with a damped trend (3+ months of history),
+  an average (1-2 months), or the current month scaled up (no history). Loan interest is calculated exactly.

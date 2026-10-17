@@ -1,6 +1,7 @@
 using System;
 using System.Globalization;
 using System.Text;
+using ForecastMod.Forecast;
 using VoxelTycoon;
 using VoxelTycoon.Buildings;
 using VoxelTycoon.Cities;
@@ -126,6 +127,7 @@ namespace ForecastMod
         private void LogReports()
         {
             try { LogFinance(); } catch (Exception e) { _logger.LogException(e); }
+            try { LogFinanceForecast(); } catch (Exception e) { _logger.LogException(e); }
             try { LogDemand(); } catch (Exception e) { _logger.LogException(e); }
             try { LogProduction(); } catch (Exception e) { _logger.LogException(e); }
         }
@@ -147,6 +149,42 @@ namespace ForecastMod
                         sb.Append("  ").Append((BudgetItem)i).Append(' ').Append(Money(m.Budget[i]));
                 }
                 sb.AppendLine();
+            }
+            _logger.Log(sb.ToString());
+        }
+
+        private void LogFinanceForecast()
+        {
+            FinanceForecastResult f = FinanceForecast.Compute(_history, Company.Current, Now);
+
+            var sb = new StringBuilder();
+            sb.AppendLine("=== Finance forecast (recurring income and costs only; new buildings/vehicles not included) ===");
+            sb.Append("Based on ").Append(f.MonthsOfHistory).Append(" month(s), method: ").Append(f.Method)
+              .Append(". Cash now ").Append(Money(f.CashNow)).AppendLine();
+            sb.AppendLine("Month    net/month    cash at month end    (80% range)");
+            foreach (FinanceForecastMonth m in f.Months)
+            {
+                sb.Append((m.Year + "-" + m.Month.ToString("00")).PadRight(7))
+                  .Append(SignedMoney(m.Net).PadLeft(11))
+                  .Append("  ").Append(Money(m.Cash).PadLeft(19))
+                  .Append("    (").Append(Money(m.CashLow)).Append(" to ").Append(Money(m.CashHigh)).Append(')')
+                  .AppendLine();
+            }
+
+            if (f.FirstNegative is int neg)
+            {
+                FinanceForecastMonth m = f.Months[neg];
+                sb.Append("WARNING: cash goes negative around ").Append(m.Year).Append('-').Append(m.Month.ToString("00")).AppendLine(".");
+            }
+            else if (f.FirstNegativeRisk is int risk)
+            {
+                FinanceForecastMonth m = f.Months[risk];
+                sb.Append("Caution: cash could go negative from ").Append(m.Year).Append('-').Append(m.Month.ToString("00"))
+                  .AppendLine(" if income comes in at the low end.");
+            }
+            else
+            {
+                sb.Append("Cash stays positive for the next ").Append(f.Months.Count).AppendLine(" months.");
             }
             _logger.Log(sb.ToString());
         }
@@ -213,6 +251,8 @@ namespace ForecastMod
         }
 
         private static string Money(double v) => v.ToString("#,0", CultureInfo.InvariantCulture);
+
+        private static string SignedMoney(double v) => (v >= 0 ? "+" : "") + Money(v);
 
         private static string FormatDate(DateTime d) => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     }

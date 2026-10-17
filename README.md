@@ -24,6 +24,8 @@ The project compiles against the game's own DLLs in `VoxelTycoon_Data\Managed`, 
 | `src/ForecastMod.cs` | Entry point. The game finds it because it extends `Mod`, then calls its hooks (game started, every frame, save, load). |
 | `src/Sampler.cs` | Watches the in-game calendar. Records cash every day and the full budget every month, and logs demand and production reports. |
 | `src/History.cs` | The recorded data, and how it is written into and read from the savegame. |
+| `src/Forecast/Holt.cs` | Trend smoothing (Holt's method, damped) used by the forecasts. |
+| `src/Forecast/FinanceForecast.cs` | 12-month cash projection, 80% range and negative-cash warnings. |
 | `mod.json` | Pack metadata. The game skips any `Content` folder without one. |
 
 ## Where to see output
@@ -47,8 +49,8 @@ To release on Steam:
 
 ## Roadmap
 
-1. Data collection and log reports (current)
-2. Finance forecast (Holt smoothing, runway, affordability)
+1. Data collection and log reports (done)
+2. Finance forecast (Holt smoothing, runway) (current, logged only)
 3. Demand forecast (coverage, level-up needs, closing risk)
 4. Production chains (utilization, bottlenecks, item balance, storage time-to-empty)
 5. In-game window with charts
