@@ -27,6 +27,7 @@ The project compiles against the game's own DLLs in `VoxelTycoon_Data\Managed`, 
 | `src/Forecast/Holt.cs` | Trend smoothing (Holt's method, damped) used by the forecasts. |
 | `src/Forecast/FinanceForecast.cs` | 12-month cash projection, 80% range and negative-cash warnings. |
 | `src/Forecast/DemandForecast.cs` | City demand outlook (level up/down, closing) from the game's rules, plus per-item totals. |
+| `src/Forecast/ProductionForecast.cs` | Mine/factory utilization and bottlenecks, deposit depletion, warehouse trends, item balance. |
 | `mod.json` | Pack metadata. The game skips any `Content` folder without one. |
 
 ## Where to see output
@@ -52,6 +53,6 @@ To release on Steam:
 
 1. Data collection and log reports (done)
 2. Finance forecast (Holt smoothing, runway) (done, logged only)
-3. Demand forecast (coverage, level-up needs, closing risk) (current, logged only)
-4. Production chains (utilization, bottlenecks, item balance, storage time-to-empty)
+3. Demand forecast (coverage, level-up needs, closing risk) (done, logged only)
+4. Production chains (utilization, bottlenecks, item balance, storage time-to-empty) (current, logged only)
 5. In-game window with charts

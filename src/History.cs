@@ -45,15 +45,40 @@ namespace ForecastMod
     public class History
     {
         // Bump this whenever the save format below changes, and handle the old version in Read().
-        private const int SaveVersion = 1;
+        // 1: months + days. 2: adds daily stock samples.
+        private const int SaveVersion = 2;
 
         public const int MaxMonths = 240; // 20 in-game years
         public const int MaxDays = 400;
+        public const int MaxStockDays = 30;
 
         public static readonly int BudgetItemCount = Enum.GetValues(typeof(BudgetItem)).Length;
 
         public readonly List<MonthRecord> Months = new List<MonthRecord>();
         public readonly List<DayRecord> Days = new List<DayRecord>();
+
+        /// <summary>Daily item count per storage building (warehouses, mines), oldest first, keyed by building id.</summary>
+        public readonly Dictionary<int, List<int>> Stock = new Dictionary<int, List<int>>();
+
+        public void AddStock(int buildingId, int count)
+        {
+            if (!Stock.TryGetValue(buildingId, out List<int> samples))
+            {
+                samples = new List<int>();
+                Stock[buildingId] = samples;
+            }
+            samples.Add(count);
+            if (samples.Count > MaxStockDays) samples.RemoveAt(0);
+        }
+
+        /// <summary>Forget buildings that no longer exist (demolished).</summary>
+        public void KeepStockOnly(HashSet<int> buildingIds)
+        {
+            var gone = new List<int>();
+            foreach (int id in Stock.Keys)
+                if (!buildingIds.Contains(id)) gone.Add(id);
+            foreach (int id in gone) Stock.Remove(id);
+        }
 
         public void AddMonth(MonthRecord record)
         {
@@ -71,6 +96,7 @@ namespace ForecastMod
         {
             Months.Clear();
             Days.Clear();
+            Stock.Clear();
         }
 
         public void Write(StateBinaryWriter writer)
@@ -95,6 +121,14 @@ namespace ForecastMod
                 writer.WriteInt(d.Month);
                 writer.WriteInt(d.Day);
                 writer.WriteDouble(d.Money);
+            }
+
+            writer.WriteInt(Stock.Count);
+            foreach (KeyValuePair<int, List<int>> pair in Stock)
+            {
+                writer.WriteInt(pair.Key);
+                writer.WriteInt(pair.Value.Count);
+                foreach (int count in pair.Value) writer.WriteInt(count);
             }
         }
 
@@ -135,6 +169,19 @@ namespace ForecastMod
                     Day = reader.ReadInt(),
                     Money = reader.ReadDouble(),
                 });
+            }
+
+            if (version >= 2)
+            {
+                int buildingCount = reader.ReadInt();
+                for (int n = 0; n < buildingCount; n++)
+                {
+                    int id = reader.ReadInt();
+                    int sampleCount = reader.ReadInt();
+                    var samples = new List<int>(sampleCount);
+                    for (int i = 0; i < sampleCount; i++) samples.Add(reader.ReadInt());
+                    Stock[id] = samples;
+                }
             }
         }
     }

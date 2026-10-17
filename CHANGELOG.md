@@ -21,7 +21,14 @@ The version stays at 0.1.0 during initial development. All changes are listed un
   (and where it is heading at the current delivery rate), and whether it levels up, is blocked by city
   population, stays stable, drops a level or closes, with days until it happens. Per-item totals with
   shortfalls and next-level needs, and unserved demand per item as opportunities.
+- Production forecast: mines and factories with actual vs maximum output, utilization and a diagnosis
+  (full speed, blocked, starved, idle); days until each mine's deposit runs out; warehouse stock trends
+  with days until empty or full; and a per-item balance of production vs factory and city needs that says
+  whether you need more producers (and roughly how many), or whether transport is the bottleneck.
+- Daily stock levels of your warehouses and mines are recorded in the savegame (save data version 2;
+  saves from version 1 still load).
 
 ### Changed
 - The demand log no longer lists every city demand with the game's "closes in ~250 days" number,
   which shows for healthy demands too. A demand only closes at level 1 with satisfaction under 20%.
+- The production log is replaced by the production forecast report.

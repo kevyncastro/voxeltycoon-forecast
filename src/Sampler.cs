@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using ForecastMod.Forecast;
@@ -76,6 +77,19 @@ namespace ForecastMod
                 Day = day.Day,
                 Money = Company.Current.Money,
             });
+
+            try { RecordStock(); } catch (Exception e) { _logger.LogException(e); }
+        }
+
+        private void RecordStock()
+        {
+            var alive = new HashSet<int>();
+            foreach (StorageNetworkBuilding b in ProductionForecast.TrackedStorages(Company.Current))
+            {
+                alive.Add(b.Id);
+                _history.AddStock(b.Id, b.Storage.Count);
+            }
+            _history.KeepStockOnly(alive);
         }
 
         private void RecordMonth(DateTime monthDay)
@@ -253,36 +267,67 @@ namespace ForecastMod
 
         private void LogProduction()
         {
+            ProductionForecastResult f = ProductionForecast.Compute(_history, Company.Current, DemandForecast.Compute());
             var sb = new StringBuilder();
-            sb.AppendLine("=== Production (your buildings) ===");
-            Company company = Company.Current;
+            sb.AppendLine("=== Production forecast ===");
 
-            ImmutableList<Device> devices = LazyManager<BuildingManager>.Current.GetAll<Device>();
-            for (int n = 0; n < devices.Count; n++)
+            sb.AppendLine("--- Mines ---");
+            if (f.Mines.Count == 0) sb.AppendLine("(none)");
+            foreach (MineReport m in f.Mines)
             {
-                Device device = devices[n];
-                if (device.Company != company || device.Recipe == null) continue;
-                sb.Append("Device ").Append(device.DisplayName?.ToString() ?? "?")
-                  .Append(" #").Append(device.Id)
-                  .Append("  recipe ").Append(device.Recipe.DisplayName?.ToString() ?? "?")
-                  .Append("  duration ").Append(device.Recipe.Duration.ToString("0.##", CultureInfo.InvariantCulture))
-                  .Append("  produced(30d) ").Append(device.ItemsProducedCounter.Sum())
-                  .Append("  in ").Append(device.GetInputBuffersFill01().ToString("P0", CultureInfo.InvariantCulture))
-                  .Append("  out ").Append(device.GetOutputBuffersFill01().ToString("P0", CultureInfo.InvariantCulture))
-                  .AppendLine();
+                sb.Append(m.Name).Append(" (").Append(m.Item).Append(")  ")
+                  .Append(m.MinedPerMonth).Append(" of max ").Append(m.MaxPerMonth).Append("/mo (").Append(Percent(m.Utilization)).Append(")  ")
+                  .Append(m.Diagnosis);
+                if (m.DaysUntilDepleted is int days)
+                    sb.Append("  deposit ").Append(Math.Round(m.DepositLeft ?? 0)).Append(" left, ").Append(Duration(days));
+                sb.AppendLine();
             }
 
-            ImmutableList<Mine> mines = LazyManager<BuildingManager>.Current.GetAll<Mine>();
-            for (int n = 0; n < mines.Count; n++)
+            sb.AppendLine("--- Factories ---");
+            if (f.Devices.Count == 0) sb.AppendLine("(none)");
+            foreach (DeviceReport d in f.Devices)
             {
-                Mine mine = mines[n];
-                if (mine.Company != company) continue;
-                sb.Append("Mine ").Append(mine.DisplayName?.ToString() ?? "?")
-                  .Append(" #").Append(mine.Id)
-                  .Append("  mined(30d) ").Append(mine.ResourcesMinedCounter.Sum())
-                  .AppendLine();
+                sb.Append(d.Name).Append(" [").Append(d.Recipe).Append("]  ")
+                  .Append(d.ProducedPerMonth).Append(" of max ").Append(d.MaxPerMonth).Append("/mo (").Append(Percent(d.Utilization)).Append(")  ")
+                  .Append("inputs ").Append(Percent(d.InputFill)).Append(" full, outputs ").Append(Percent(d.OutputFill)).Append(" full  ")
+                  .Append(d.Diagnosis).AppendLine();
+            }
+
+            sb.AppendLine("--- Warehouses ---");
+            if (f.Storages.Count == 0) sb.AppendLine("(none)");
+            foreach (StorageReport s in f.Storages)
+            {
+                sb.Append(s.Name).Append(" (").Append(s.Item).Append(")  ").Append(s.Count).Append('/').Append(s.Capacity).Append("  ");
+                if (s.ChangePerDay is double change)
+                {
+                    sb.Append(change >= 0 ? "+" : "").Append(change.ToString("0.#", CultureInfo.InvariantCulture)).Append("/day");
+                    if (s.DaysUntilEmpty is int empty) sb.Append(empty < 30 ? ", WARNING: empty in ~" : ", empty in ~").Append(empty).Append(" days");
+                    else if (s.DaysUntilFull is int full) sb.Append(full < 30 ? ", WARNING: full in ~" : ", full in ~").Append(full).Append(" days");
+                    else sb.Append(", steady");
+                }
+                else
+                {
+                    sb.Append("trend after 3 days of samples (have ").Append(s.Samples).Append(')');
+                }
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("--- Item balance (per month) ---");
+            foreach (ItemBalance b in f.Items)
+            {
+                sb.Append(b.Item).Append(": made ").Append(b.ProducedPerMonth).Append(" (max ").Append(b.MaxProductionPerMonth).Append(')');
+                if (b.FactoryNeedPerMonth > 0) sb.Append(", factories use ").Append(b.UsedByFactoriesPerMonth).Append(" (need ").Append(b.FactoryNeedPerMonth).Append(')');
+                if (b.CityWantNowPerMonth > 0) sb.Append(", cities get ").Append(b.DeliveredToCitiesPerMonth).Append(" (want ").Append(b.CityWantNowPerMonth).Append(')');
+                sb.Append("  -> ").Append(b.Verdict).AppendLine();
             }
             _logger.Log(sb.ToString());
+        }
+
+        private static string Duration(int days)
+        {
+            if (days >= 720) return "about " + (days / 360) + " years";
+            if (days >= 60) return "about " + (days / 30) + " months";
+            return "WARNING: about " + days + " days";
         }
 
         private static string Money(double v) => v.ToString("#,0", CultureInfo.InvariantCulture);
