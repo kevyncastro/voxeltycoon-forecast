@@ -191,29 +191,64 @@ namespace ForecastMod
 
         private void LogDemand()
         {
+            DemandForecastResult f = DemandForecast.Compute();
             var sb = new StringBuilder();
-            sb.AppendLine("=== City demand ===");
-            // The game's ImmutableList has no enumerator, so loop by index.
-            ImmutableList<City> cities = Manager<CityManager>.Current.Cities;
-            for (int c = 0; c < cities.Count; c++)
+
+            sb.AppendLine("=== Demand forecast: cities you deliver to ===");
+            if (f.Served.Count == 0) sb.AppendLine("(none yet)");
+            foreach (DemandForecastEntry e in f.Served)
             {
-                City city = cities[c];
-                CityDemandCollection demands = city.Demands;
-                for (int i = 0; i < demands.Count; i++)
-                {
-                    CityDemand d = demands[i];
-                    int delivered30 = d.DeliveredCounter.Sum();
-                    sb.Append(city.Name).Append(" / ").Append(d.Item?.DisplayName?.ToString() ?? "?")
-                      .Append("  level ").Append(d.Level)
-                      .Append("  demand ").Append(d.Demand).Append("/mo")
-                      .Append("  next level ").Append(d.GetDemand(d.Level + 1)).Append("/mo")
-                      .Append("  delivered(30d) ").Append(delivered30)
-                      .Append("  satisfaction ").Append(d.Satisfaction.ToString("P0", CultureInfo.InvariantCulture))
-                      .Append("  closes in ").Append(d.DaysToClosing).Append("d")
-                      .AppendLine();
-                }
+                sb.Append(e.City).Append(" / ").Append(e.Item)
+                  .Append("  L").Append(e.Level)
+                  .Append("  delivered ").Append(e.DeliveredLast30Days).Append(" of ").Append(e.DemandPerMonth).Append("/mo")
+                  .Append(" (").Append(Percent(e.Coverage)).Append(')')
+                  .Append("  satisfaction ").Append(Percent(e.Satisfaction));
+                if (Math.Abs(e.SteadySatisfaction - e.Satisfaction) >= 0.1f)
+                    sb.Append(" heading to ").Append(Percent(e.SteadySatisfaction));
+                sb.Append("  -> ").Append(Describe(e)).AppendLine();
+            }
+
+            sb.AppendLine("--- Per item (cities you deliver to) ---");
+            foreach (ItemDemandSummary s in f.ServedByItem)
+            {
+                sb.Append(s.Item).Append(": delivering ").Append(s.DeliveredLast30Days)
+                  .Append("/mo, wanted ").Append(s.DemandPerMonth)
+                  .Append("/mo now, ").Append(s.NextLevelDemandPerMonth).Append("/mo after next level-ups")
+                  .Append(" (").Append(s.Cities).Append(s.Cities == 1 ? " city)" : " cities)");
+                int shortfall = s.DemandPerMonth - s.DeliveredLast30Days;
+                if (shortfall > 0) sb.Append("  short by ").Append(shortfall).Append("/mo");
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("--- Unserved demand (opportunities, unlocked regions) ---");
+            foreach (ItemDemandSummary s in f.UnservedByItem)
+            {
+                sb.Append(s.Item).Append(": ").Append(s.DemandPerMonth).Append("/mo across ")
+                  .Append(s.Cities).Append(s.Cities == 1 ? " city" : " cities").AppendLine();
             }
             _logger.Log(sb.ToString());
+        }
+
+        private static string Describe(DemandForecastEntry e)
+        {
+            string when = e.DaysUntil is int days ? " in ~" + days + " days" : "";
+            switch (e.Outlook)
+            {
+                case DemandOutlook.LevelUp:
+                    return "levels up" + when + " (then wants " + e.NextLevelDemandPerMonth + "/mo, +" +
+                           (e.NextLevelDemandPerMonth - e.DemandPerMonth) + ")";
+                case DemandOutlook.LevelUpBlocked:
+                    return "satisfied enough to grow, but city needs " + e.PopulationNeeded.ToString("#,0", CultureInfo.InvariantCulture) +
+                           " people (has " + e.PopulationNow.ToString("#,0", CultureInfo.InvariantCulture) + ")";
+                case DemandOutlook.Stable:
+                    return "stable (needs 40%+ satisfaction to grow)";
+                case DemandOutlook.LevelDown:
+                    return "WARNING: drops a level" + when + " unless satisfaction reaches 20%";
+                case DemandOutlook.Closing:
+                    return "WARNING: store closes" + when + " unless satisfaction reaches 20%";
+                default:
+                    return "";
+            }
         }
 
         private void LogProduction()
@@ -253,6 +288,8 @@ namespace ForecastMod
         private static string Money(double v) => v.ToString("#,0", CultureInfo.InvariantCulture);
 
         private static string SignedMoney(double v) => (v >= 0 ? "+" : "") + Money(v);
+
+        private static string Percent(float v) => v.ToString("P0", CultureInfo.InvariantCulture);
 
         private static string FormatDate(DateTime d) => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
     }
