@@ -36,12 +36,14 @@ There are two separate version numbers:
 
 | What | Where | When to change it |
 |---|---|---|
-| **Mod version** (`0.1.0`) | `<Version>` in `ForecastMod.csproj` | Every release. Shown in `Player.log` as `Tycoon Forecast 0.1.0 loaded.` |
+| **Mod version** (`0.1.0`) | `<Version>` in `ForecastMod.csproj` | Only for Steam Workshop releases. Fixed at `0.1.0` during initial development. Shown in `Player.log` as `Tycoon Forecast 0.1.0 loaded.` |
 | **Save data version** (`1`) | `SaveVersion` in `src/History.cs` | Only when the data written into savegames changes. `Read()` must still handle every older version. |
 
-To release:
-1. Bump `<Version>` and move the `[Unreleased]` notes in `CHANGELOG.md` under the new version.
-2. Commit, then tag: `git tag v0.2.0` and `git push origin main --tags`.
+During development, add each change under `[Unreleased]` in `CHANGELOG.md`; no version bumps or tags.
+
+To release on Steam:
+1. Set `<Version>` and move the `[Unreleased]` notes in `CHANGELOG.md` under that version.
+2. Commit, then tag: `git tag v1.0.0` and `git push origin main --tags`.
 
 ## Roadmap
 

@@ -7,7 +7,7 @@
     <!-- Folder name inside the game's Content directory. This is also the mod's pack id. -->
     <VTModFolder>ForecastMod</VTModFolder>
 
-    <!-- Mod version (semantic versioning). Bump this, update CHANGELOG.md, then tag the commit vX.Y.Z. -->
+    <!-- Mod version (semantic versioning). Stays fixed during development; first bump/tag is the Steam Workshop release. -->
     <Version>0.1.0</Version>
 
     <TargetFramework>net48</TargetFramework>
