@@ -38,6 +38,10 @@ The project compiles against the game's own DLLs in `VoxelTycoon_Data\Managed`, 
 
 Press **F6**, or use the **Forecast** button in the toolbar's extra tools menu, to open or close the
 forecast window. It refreshes once per in-game day while open. **Shift+F6** opens the classic window.
+
+- **Filters** (Demand and Production tabs): pick an item, a city, or "Problems only". The filters are shared
+  between the two tabs and stay set while the window is open.
+- **Click a card** (a store, mine, factory or warehouse) to move the camera to that building and open its window.
 The same reports are also written to `Player.log` when you load a save and at each month end.
 | `mod.json` | Pack metadata. The game skips any `Content` folder without one. |
 

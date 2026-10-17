@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using VoxelTycoon;
@@ -62,6 +63,66 @@ namespace ForecastMod.UI.Native
             le.minWidth = 0f;
             le.flexibleWidth = 1f;
             return col;
+        }
+
+        /// <summary>
+        /// Makes a card clickable: the card darkens slightly on hover and press, like the game's list rows,
+        /// and a small crosshair icon on the right shows it leads somewhere.
+        /// </summary>
+        public static void MakeClickable(Transform card, Action onClick, string tooltip = null)
+        {
+            Panel panel = card.GetComponent<Panel>();
+            panel.raycastTarget = true;
+
+            Text icon = Label(card, "", 12, color: SubtleColor, width: 16, align: TextAnchor.MiddleRight);
+            icon.SetFontIcon(FontIcon.FaSolid("")); // crosshairs
+
+            Button button = card.gameObject.AddComponent<Button>();
+            button.targetGraphic = panel;
+            button.navigation = new Navigation { mode = Navigation.Mode.None };
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(0.93f, 0.95f, 0.98f, 1f);
+            colors.pressedColor = new Color(0.85f, 0.88f, 0.93f, 1f);
+            colors.selectedColor = Color.white;
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+            button.onClick.AddListener(() => onClick());
+
+            if (tooltip != null) Tooltip.For(button, tooltip);
+        }
+
+        /// <summary>A filter chip: dark when selected, white otherwise.</summary>
+        public static void Chip(Transform parent, string text, bool selected, Action onClick)
+        {
+            GameObject go = parent.AddUIChild("Chip");
+            Panel panel = go.AddComponent<Panel>();
+            panel.CornersType = PanelCornerType.Round10;
+            panel.EnabledCorners = PanelCorners.All;
+            panel.color = selected ? TextColor : Color.white;
+            panel.raycastTarget = true;
+            LayoutHelper.MakeLayoutGroup(go.transform, LayoutHelper.Orientation.Horizontal, new RectOffset(12, 12, 4, 5), 0f, TextAnchor.MiddleCenter);
+
+            Text label = Label(go.transform, text, 11, bold: selected, color: selected ? Color.white : TextColor, align: TextAnchor.MiddleCenter);
+            LayoutElement le = label.GetComponent<LayoutElement>();
+            le.flexibleWidth = 0f;
+
+            Button button = go.AddComponent<Button>();
+            button.targetGraphic = panel;
+            button.navigation = new Navigation { mode = Navigation.Mode.None };
+            ColorBlock colors = button.colors;
+            colors.highlightedColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+            colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            colors.selectedColor = Color.white;
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+            button.onClick.AddListener(() => onClick());
+        }
+
+        /// <summary>A row for chips. Layout groups don't wrap, so callers start a new row every few chips.</summary>
+        public static Transform ChipRow(Transform parent)
+        {
+            return Row(parent, 6f, TextAnchor.MiddleLeft);
         }
 
         /// <summary>A card holding one subtle line, for empty sections ("None.").</summary>
@@ -162,7 +223,7 @@ namespace ForecastMod.UI.Native
             {
                 GameObject child = parent.GetChild(i).gameObject;
                 child.SetActive(false);
-                Object.Destroy(child);
+                UnityEngine.Object.Destroy(child);
             }
         }
 

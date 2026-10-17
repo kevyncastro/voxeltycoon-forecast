@@ -1,9 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using ForecastMod.Forecast;
 using UnityEngine;
 using UnityEngine.UI;
 using VoxelTycoon;
+using VoxelTycoon.Buildings;
+using VoxelTycoon.Cities;
+using VoxelTycoon.Game.UI;
+using VoxelTycoon.Recipes;
 using VoxelTycoon.UI;
 using VoxelTycoon.UI.Controls;
 using VoxelTycoon.UI.Windows;
@@ -38,6 +43,8 @@ namespace ForecastMod.UI.Native
         private DateTime _refreshedOn;
         private Texture2D _chartTexture;
         private ChartTexture _chart;
+        private DemandForecastResult _demandResult;
+        private ProductionForecastResult _productionResult;
 
         public static bool IsOpen => UIManager.Current?.FindWindow<NativeForecastWindow>() != null;
 
@@ -116,10 +123,11 @@ namespace ForecastMod.UI.Native
 
                 Ui.Clear(_finance);
                 BuildFinance(finance);
-                Ui.Clear(_demand);
-                BuildDemand(demand);
-                Ui.Clear(_production);
-                BuildProduction(production);
+
+                // Kept so filter clicks can rebuild the tabs without recomputing.
+                _demandResult = demand;
+                _productionResult = production;
+                RebuildFiltered();
             }
             catch (Exception e)
             {
@@ -254,13 +262,113 @@ namespace ForecastMod.UI.Native
             _chartTexture = chart.Render(PlotW, ChartH, _chartTexture);
         }
 
+        // ---------------- Filters ----------------
+
+        // Shared by the Demand and Production tabs, kept across the daily refresh.
+        private string _itemFilter;   // null = all items
+        private string _cityFilter;   // null = all cities (Demand tab only)
+        private bool _problemsOnly;
+
+        private const int ChipsPerRow = 6;
+
+        private bool ItemMatches(string item) => _itemFilter == null || item == _itemFilter;
+
+        private void BuildFilters(Transform parent, IEnumerable<string> items, IEnumerable<string> cities)
+        {
+            var itemList = new SortedSet<string>(items, StringComparer.Ordinal);
+            if (_itemFilter != null) itemList.Add(_itemFilter);
+
+            Transform bar = Ui.Column(parent, 6f);
+            Transform row = Ui.ChipRow(bar);
+            Ui.Chip(row, "All items", _itemFilter == null, () => SetFilter(ref _itemFilter, null));
+            int n = 1;
+            foreach (string item in itemList)
+            {
+                if (n++ % ChipsPerRow == 0) row = Ui.ChipRow(bar);
+                string value = item;
+                Ui.Chip(row, item, _itemFilter == item, () => SetFilter(ref _itemFilter, value));
+            }
+
+            row = Ui.ChipRow(bar);
+            Ui.Chip(row, "Problems only", _problemsOnly, () =>
+            {
+                _problemsOnly = !_problemsOnly;
+                RebuildFiltered();
+            });
+
+            if (cities != null)
+            {
+                var cityList = new SortedSet<string>(cities, StringComparer.Ordinal);
+                if (cityList.Count > 1 || _cityFilter != null)
+                {
+                    n = 1;
+                    Ui.Chip(row, "All cities", _cityFilter == null, () => SetFilter(ref _cityFilter, null));
+                    foreach (string city in cityList)
+                    {
+                        if (++n % ChipsPerRow == 0) row = Ui.ChipRow(bar);
+                        string value = city;
+                        Ui.Chip(row, city, _cityFilter == city, () => SetFilter(ref _cityFilter, value));
+                    }
+                }
+            }
+        }
+
+        private void SetFilter(ref string field, string value)
+        {
+            field = value;
+            RebuildFiltered();
+        }
+
+        private void RebuildFiltered()
+        {
+            if (_demandResult != null) { Ui.Clear(_demand); BuildDemand(_demandResult); }
+            if (_productionResult != null) { Ui.Clear(_production); BuildProduction(_productionResult); }
+        }
+
+        private static void Showing(Transform parent, int shown, int total, string what)
+        {
+            if (shown == total) return;
+            Ui.Label(parent, "Showing " + shown + " of " + total + " " + what + ".", 11, color: Ui.SubtleColor);
+        }
+
+        // ---------------- Clicking through to the game ----------------
+
+        /// <summary>Moves the camera to the building and opens its own window, like clicking it on the map.</summary>
+        private static void GoTo(Building building)
+        {
+            if (building == null) return;
+            GameCameraViewHelper.TryGoTo(building);
+            LazyManager<BuildingUIManager>.Current.ShowWindow(building);
+        }
+
+        private static void GoTo(CityDemand demand)
+        {
+            if (demand.Store != null) GoTo(demand.Store);
+            else GameUIHelper.ShowCityWindow(demand.City);
+        }
+
         // ---------------- Demand ----------------
 
         private void BuildDemand(DemandForecastResult f)
         {
-            Ui.Heading(_demand, "Cities you deliver to");
-            if (f.Served.Count == 0) Ui.Empty(_demand, "None yet.");
+            var served = new List<DemandForecastEntry>();
             foreach (DemandForecastEntry e in f.Served)
+            {
+                bool problem = e.Outlook != DemandOutlook.LevelUp || e.Coverage < 0.9f;
+                if (ItemMatches(e.Item) && (_cityFilter == null || e.City == _cityFilter) && (!_problemsOnly || problem))
+                    served.Add(e);
+            }
+
+            var items = new List<string>();
+            var cities = new List<string>();
+            foreach (DemandForecastEntry e in f.Served) { items.Add(e.Item); cities.Add(e.City); }
+            foreach (ItemDemandSummary s in f.UnservedByItem) items.Add(s.Item);
+            BuildFilters(_demand, items, cities);
+
+            Ui.Heading(_demand, "Cities you deliver to");
+            Showing(_demand, served.Count, f.Served.Count, "demands");
+            if (served.Count == 0) Ui.Empty(_demand, f.Served.Count == 0 ? "None yet." : "Nothing matches the filters.");
+            foreach (DemandForecastEntry e in served)
             {
                 Transform card = Ui.Card(_demand);
 
@@ -277,35 +385,63 @@ namespace ForecastMod.UI.Native
                 Ui.Label(card, sat, 11, width: SatisfactionWidth);
 
                 Ui.Label(card, ShortOutlook(e), 11, color: OutlookColor(e.Outlook));
+
+                CityDemand demand = e.Demand;
+                Ui.MakeClickable(card, () => GoTo(demand), "Go to this store and open it");
+            }
+
+            // Per-item totals from the cards shown, so they follow the city and item filters.
+            var byItem = new SortedDictionary<string, ItemDemandSummary>(StringComparer.Ordinal);
+            foreach (DemandForecastEntry e in served)
+            {
+                if (!byItem.TryGetValue(e.Item, out ItemDemandSummary s)) byItem[e.Item] = s = new ItemDemandSummary { Item = e.Item };
+                s.Cities++;
+                s.DeliveredLast30Days += e.DeliveredLast30Days;
+                s.DemandPerMonth += e.DemandPerMonth;
+                s.NextLevelDemandPerMonth += e.NextLevelDemandPerMonth;
             }
 
             Ui.Heading(_demand, "Per item");
-            Transform items = Ui.Card(_demand, LayoutHelper.Orientation.Vertical);
-            if (f.ServedByItem.Count == 0) Ui.Label(items, "Nothing delivered yet.", 12, color: Ui.SubtleColor);
-            foreach (ItemDemandSummary s in f.ServedByItem)
+            Transform items2 = Ui.Card(_demand, LayoutHelper.Orientation.Vertical);
+            if (byItem.Count == 0) Ui.Label(items2, "Nothing to show.", 12, color: Ui.SubtleColor);
+            foreach (ItemDemandSummary s in byItem.Values)
             {
                 int shortfall = s.DemandPerMonth - s.DeliveredLast30Days;
                 string text = Ui.Bold(s.Item) + ": delivering " + s.DeliveredLast30Days + "/mo, wanted " + s.DemandPerMonth +
                               "/mo now, " + s.NextLevelDemandPerMonth + "/mo after next level-ups";
                 if (shortfall > 0) text += "   " + Ui.Paint("short by " + shortfall + "/mo", Ui.WarnColor);
-                Ui.Label(items, text, 12);
+                Ui.Label(items2, text, 12);
             }
 
+            // Opportunities are not problems, and they are totals per item (not per city).
+            if (_problemsOnly || _cityFilter != null) return;
             Ui.Heading(_demand, "Unserved demand (opportunities)");
             Transform opp = Ui.Card(_demand, LayoutHelper.Orientation.Vertical);
-            if (f.UnservedByItem.Count == 0) Ui.Label(opp, "None in your unlocked regions.", 12, color: Ui.SubtleColor);
+            int shownOpp = 0;
             foreach (ItemDemandSummary s in f.UnservedByItem)
+            {
+                if (!ItemMatches(s.Item)) continue;
+                shownOpp++;
                 Ui.Label(opp, Ui.Bold(s.Item) + ": " + s.DemandPerMonth + "/mo across " + s.Cities + (s.Cities == 1 ? " city" : " cities"), 12);
+            }
+            if (shownOpp == 0) Ui.Label(opp, "None in your unlocked regions.", 12, color: Ui.SubtleColor);
         }
 
         // ---------------- Production ----------------
 
         private void BuildProduction(ProductionForecastResult f)
         {
+            var items = new List<string>();
+            foreach (ItemBalance b in f.Items) items.Add(b.Item);
+            BuildFilters(_production, items, null);
+
             Ui.Heading(_production, "Item balance (per month)");
-            if (f.Items.Count == 0) Ui.Empty(_production, "Nothing produced yet.");
+            int shown = 0;
             foreach (ItemBalance b in f.Items)
             {
+                bool problem = !b.Verdict.StartsWith("balanced") && !b.Verdict.StartsWith("not used");
+                if (!ItemMatches(b.Item) || (_problemsOnly && !problem)) continue;
+                shown++;
                 Transform card = Ui.Card(_production, LayoutHelper.Orientation.Vertical);
                 string text = Ui.Bold(b.Item) + "   made " + b.ProducedPerMonth + " (max " + b.MaxProductionPerMonth + ")";
                 if (b.FactoryNeedPerMonth > 0) text += " · factories use " + b.UsedByFactoriesPerMonth + " (need " + b.FactoryNeedPerMonth + ")";
@@ -314,27 +450,38 @@ namespace ForecastMod.UI.Native
                 Color color = b.Verdict.StartsWith("SHORT") ? Ui.BadColor : b.Verdict.StartsWith("balanced") ? Ui.GoodColor : Ui.WarnColor;
                 Ui.Label(card, Soften(b.Verdict), 11, color: color);
             }
+            if (shown == 0) Ui.Empty(_production, f.Items.Count == 0 ? "Nothing produced yet." : "Nothing matches the filters.");
 
             Ui.Heading(_production, "Mines");
-            if (f.Mines.Count == 0) Ui.Empty(_production, "No mines.");
+            shown = 0;
             foreach (MineReport m in f.Mines)
             {
+                if (!ItemMatches(m.Item) || (_problemsOnly && m.Diagnosis.StartsWith("running"))) continue;
+                shown++;
                 string extra = m.DaysUntilDepleted is int days ? "deposit lasts " + Sampler.Duration(days) : null;
-                BuildingCard(m.Name, m.Item, m.MinedPerMonth, m.MaxPerMonth, m.Utilization, m.Diagnosis, extra);
+                BuildingCard(m.Building, m.Name, m.Item, m.MinedPerMonth, m.MaxPerMonth, m.Utilization, m.Diagnosis, extra);
             }
+            if (shown == 0) Ui.Empty(_production, f.Mines.Count == 0 ? "No mines." : "Nothing matches the filters.");
 
             Ui.Heading(_production, "Factories");
-            if (f.Devices.Count == 0) Ui.Empty(_production, "No factories.");
+            shown = 0;
             foreach (DeviceReport d in f.Devices)
             {
+                if (!DeviceMatches(d) || (_problemsOnly && d.Diagnosis.StartsWith("running"))) continue;
+                shown++;
                 string extra = "inputs " + Percent(d.InputFill) + " full, outputs " + Percent(d.OutputFill) + " full";
-                BuildingCard(d.Name, d.Recipe, d.ProducedPerMonth, d.MaxPerMonth, d.Utilization, d.Diagnosis, extra);
+                BuildingCard(d.Building, d.Name, d.Recipe, d.ProducedPerMonth, d.MaxPerMonth, d.Utilization, d.Diagnosis, extra);
             }
+            if (shown == 0) Ui.Empty(_production, f.Devices.Count == 0 ? "No factories." : "Nothing matches the filters.");
 
             Ui.Heading(_production, "Warehouses");
-            if (f.Storages.Count == 0) Ui.Empty(_production, "No warehouses.");
+            shown = 0;
             foreach (StorageReport s in f.Storages)
             {
+                bool problem = (s.DaysUntilEmpty ?? int.MaxValue) < 30 || (s.DaysUntilFull ?? int.MaxValue) < 30;
+                if (!ItemMatches(s.Item) || (_problemsOnly && !problem)) continue;
+                shown++;
+
                 Transform card = Ui.Card(_production);
                 Transform name = Ui.FixedColumn(card, NameWidth);
                 Ui.Label(name, s.Name, 12, bold: true);
@@ -360,10 +507,25 @@ namespace ForecastMod.UI.Native
                     color = Ui.SubtleColor;
                 }
                 Ui.Label(card, trend, 11, color: color);
+
+                Building building = s.Building;
+                Ui.MakeClickable(card, () => GoTo(building), "Go to this warehouse and open it");
             }
+            if (shown == 0) Ui.Empty(_production, f.Storages.Count == 0 ? "No warehouses." : "Nothing matches the filters.");
         }
 
-        private void BuildingCard(string title, string subtitle, int actual, int max, float utilization, string diagnosis, string extra)
+        /// <summary>A factory matches the item filter if the item is one of its recipe's inputs or outputs.</summary>
+        private bool DeviceMatches(DeviceReport d)
+        {
+            if (_itemFilter == null) return true;
+            Recipe recipe = d.Building?.Recipe;
+            if (recipe == null) return false;
+            foreach (RecipeItem i in recipe.InputItems) if (i.Item?.DisplayName?.ToString() == _itemFilter) return true;
+            foreach (RecipeItem o in recipe.OutputItems) if (o.Item?.DisplayName?.ToString() == _itemFilter) return true;
+            return false;
+        }
+
+        private void BuildingCard(Building building, string title, string subtitle, int actual, int max, float utilization, string diagnosis, string extra)
         {
             Transform card = Ui.Card(_production);
 
@@ -378,6 +540,8 @@ namespace ForecastMod.UI.Native
             Transform info = Ui.FlexibleColumn(card, 2f);
             Ui.Label(info, Soften(diagnosis), 11, color: DiagnosisColor(diagnosis));
             if (extra != null) Ui.Label(info, extra, 11, color: Ui.SubtleColor);
+
+            Ui.MakeClickable(card, () => GoTo(building), "Go to this building and open it");
         }
 
         // ---------------- Helpers ----------------

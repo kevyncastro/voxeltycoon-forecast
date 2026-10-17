@@ -29,6 +29,9 @@ The version stays at 0.1.0 during initial development. All changes are listed un
   with Finance, Demand and Production tabs. Open it with F6 or the "Forecast" button in the toolbar's
   extra tools menu. The Finance tab has a cash chart: 180 days of history, the 12-month forecast and its
   80% range.
+- Filters on the Demand and Production tabs: by item, by city (Demand), and "Problems only"
+  (shortfalls, blocked or starved buildings, demands not growing, warehouses near empty or full).
+- Click a store, mine, factory or warehouse card to move the camera there and open the building's own window.
 - Classic IMGUI version of the window on Shift+F6, kept for comparison until the native window is proven.
   Clicks and scrolling over it don't reach the map behind it.
 - Daily stock levels of your warehouses and mines are recorded in the savegame (save data version 2;

@@ -9,6 +9,7 @@ namespace ForecastMod.Forecast
 {
     public class MineReport
     {
+        public Mine Building;
         public string Name;
         public string Item;
         public int MinedPerMonth;      // actual, last 30 days
@@ -21,6 +22,7 @@ namespace ForecastMod.Forecast
 
     public class DeviceReport
     {
+        public Device Building;
         public string Name;
         public string Recipe;
         public int ProducedPerMonth;   // actual items output, last 30 days
@@ -33,6 +35,7 @@ namespace ForecastMod.Forecast
 
     public class StorageReport
     {
+        public StorageNetworkBuilding Building;
         public string Name;
         public string Item;
         public int Count;
@@ -143,6 +146,7 @@ namespace ForecastMod.Forecast
 
             var r = new MineReport
             {
+                Building = mine,
                 Name = Label(mine),
                 Item = ItemName(mine.Storage?.Item ?? mine.Deposit?.Item),
                 MinedPerMonth = mined,
@@ -194,6 +198,7 @@ namespace ForecastMod.Forecast
 
             var r = new DeviceReport
             {
+                Building = device,
                 Name = Label(device),
                 Recipe = recipe.DisplayName?.ToString() ?? "?",
                 ProducedPerMonth = produced,
@@ -215,6 +220,7 @@ namespace ForecastMod.Forecast
         {
             var r = new StorageReport
             {
+                Building = s,
                 Name = Label(s),
                 Item = ItemName(s.Storage.Item),
                 Count = s.Storage.Count,
