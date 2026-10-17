@@ -2,3 +2,10 @@ bin/
 obj/
 .vs/
 *.user
+
+# Never commit the game's files: its DLLs and decompiled code belong to its developers.
+*.dll
+*.exe
+*.pdb
+decompiled/
+vt-src/

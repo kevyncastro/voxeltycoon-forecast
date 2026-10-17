@@ -1,0 +1,26 @@
+name: Idea or improvement
+description: Suggest a new forecast, filter or change to the window
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would help you?
+      description: The question you want answered while playing, or what's hard today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How you imagine it working. Sketches and screenshots welcome.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Finance
+        - Demand
+        - Production
+        - Window and filters
+        - Other

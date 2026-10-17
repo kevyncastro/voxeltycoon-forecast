@@ -68,7 +68,16 @@ To release on Steam:
 ## Roadmap
 
 1. Data collection and log reports (done)
-2. Finance forecast (Holt smoothing, runway) (done, logged only)
-3. Demand forecast (coverage, level-up needs, closing risk) (done, logged only)
+2. Finance forecast (Holt smoothing, runway) (done)
+3. Demand forecast (coverage, level-up needs, closing risk) (done)
 4. Production chains (utilization, bottlenecks, item balance, storage time-to-empty) (done)
-5. In-game window with charts (current)
+5. In-game window with charts, filters and click-to-locate (done)
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and guidelines,
+and [SECURITY.md](SECURITY.md) to report a vulnerability privately.
+
+## License
+
+[MIT](LICENSE). Voxel Tycoon and its assets belong to their developers; this repository contains none of them.

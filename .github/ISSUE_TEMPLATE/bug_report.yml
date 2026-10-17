@@ -1,0 +1,39 @@
+name: Bug report
+description: Something in Voxel Forecast doesn't work or shows wrong numbers
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we reproduce it?
+      placeholder: |
+        1. Load a save with ...
+        2. Open the forecast (F6), Production tab
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Game log
+      description: |
+        The [ForecastMod] lines and any errors from
+        %USERPROFILE%\AppData\LocalLow\VoxelTycoon\VoxelTycoon\Player.log
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Mod version
+      description: Shown in the log as "Voxel Forecast x.y.z loaded."
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag images here if they help.
