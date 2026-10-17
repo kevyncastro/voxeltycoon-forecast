@@ -159,9 +159,9 @@ namespace ForecastMod.Forecast
             if (mine.DepositIsEmpty()) r.Diagnosis = "deposit used up";
             else if (!mine.IsEnabled) r.Diagnosis = "disabled";
             else if (mine.Storage != null && mine.Storage.RemainingCapacity == 0)
-                r.Diagnosis = "BLOCKED: its storage is full, vehicles aren't collecting fast enough";
+                r.Diagnosis = "BLOCKED: storage full, add vehicles to collect";
             else if (r.Utilization >= 0.9f) r.Diagnosis = "running at full speed";
-            else r.Diagnosis = "below full speed (recently built, or was blocked earlier this month)";
+            else r.Diagnosis = "below full speed (new, or blocked earlier)";
             return r;
         }
 
@@ -205,8 +205,8 @@ namespace ForecastMod.Forecast
 
             if (!device.IsEnabled) r.Diagnosis = "disabled";
             else if (r.Utilization >= 0.9f) r.Diagnosis = "running at full speed";
-            else if (r.OutputFill >= 0.9f) r.Diagnosis = "BLOCKED: output isn't being taken away";
-            else if (r.InputFill < 0.2f) r.Diagnosis = "STARVED: inputs aren't arriving fast enough";
+            else if (r.OutputFill >= 0.9f) r.Diagnosis = "BLOCKED: output isn't collected";
+            else if (r.InputFill < 0.2f) r.Diagnosis = "STARVED: inputs aren't arriving";
             else r.Diagnosis = "below full speed";
             return r;
         }

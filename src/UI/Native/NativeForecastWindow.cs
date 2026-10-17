@@ -21,8 +21,17 @@ namespace ForecastMod.UI.Native
         public static History History;
 
         private const float ContentWidth = 640f;
-        private const int ChartW = 616;
+        // Window content width minus the scroll view padding (2 x 16) and the card padding (2 x 12).
+        private const int ChartW = (int)ContentWidth - 32 - 24;
+
+        // Shared column widths, so cards on every tab line up.
+        private const float NameWidth = 160f;
+        private const float RateWidth = 130f;
+        private const float SatisfactionWidth = 110f;
         private const int ChartH = 190;
+        private const float YAxisWidth = 40f;
+        private const float AxisGap = 6f;
+        private const int PlotW = ChartW - (int)YAxisWidth - (int)AxisGap;
         private const int HistoryDays = 180;
 
         private Transform _finance, _demand, _production;
@@ -124,9 +133,11 @@ namespace ForecastMod.UI.Native
 
         private void BuildFinance(FinanceForecastResult f)
         {
-            if (f.Months.Count == 0) { Ui.Label(_finance, "No data yet."); return; }
+            if (f.Months.Count == 0) { Ui.Empty(_finance, "No data yet."); return; }
 
             Transform summary = Ui.Card(_finance);
+            // Top-align so the small titles line up even when a value wraps onto two lines.
+            summary.GetComponent<HorizontalOrVerticalLayoutGroup>().childAlignment = TextAnchor.UpperLeft;
             Stat(summary, "Cash now", Money(f.CashNow), 170);
             Stat(summary, "Recurring net income", SignedMoney(f.Months[0].Net) + " / month", 200);
             Stat(summary, "Based on", f.MonthsOfHistory + " month(s), " + f.Method, -1);
@@ -141,15 +152,31 @@ namespace ForecastMod.UI.Native
             Ui.Heading(_finance, "Cash: last " + HistoryDays + " days and next 12 months");
             Transform chartCard = Ui.Card(_finance, LayoutHelper.Orientation.Vertical);
             BuildChart(f);
-            Ui.Image(chartCard, _chartTexture, ChartW, ChartH);
-            Transform axis = Ui.Row(chartCard, 0f);
-            Ui.Label(axis, "−" + HistoryDays + " days", 11, color: Ui.SubtleColor);
-            Ui.Label(axis, "today", 11, color: Ui.SubtleColor, align: TextAnchor.UpperCenter);
-            Ui.Label(axis, "+12 months", 11, color: Ui.SubtleColor, align: TextAnchor.UpperRight);
+
+            // Y axis labels on the left, then the chart; together exactly ChartW wide.
+            Transform chartRow = Ui.Row(chartCard, AxisGap, TextAnchor.UpperLeft);
+            Transform yAxis = Ui.FixedColumn(chartRow, YAxisWidth);
+            for (int i = 0; i < 3; i++)
+            {
+                float value = Mathf.Lerp(_chart.MaxY, _chart.MinY, i / 2f);
+                TextAnchor anchor = i == 0 ? TextAnchor.UpperRight : i == 1 ? TextAnchor.MiddleRight : TextAnchor.LowerRight;
+                Text label = Ui.Label(yAxis, Short(value), 10, color: Ui.SubtleColor, align: anchor);
+                label.GetComponent<LayoutElement>().minHeight = label.GetComponent<LayoutElement>().preferredHeight = ChartH / 3f;
+            }
+            Ui.Image(chartRow, _chartTexture, PlotW, ChartH);
+
+            // X axis labels, with "today" centred under the today line.
+            float todayPx = PlotW * _chart.NormX(0);
+            Transform axis = Ui.Row(chartCard, 0f, TextAnchor.UpperLeft);
+            Ui.FixedColumn(axis, YAxisWidth + AxisGap);
+            Ui.Label(axis, "−" + HistoryDays + " days", 10, color: Ui.SubtleColor, width: Mathf.Max(1f, todayPx - 30f));
+            Ui.Label(axis, "today", 10, color: Ui.SubtleColor, width: 60f, align: TextAnchor.UpperCenter);
+            Ui.Label(axis, "+12 months", 10, color: Ui.SubtleColor, align: TextAnchor.UpperRight);
+
+            Ui.Space(chartCard, 2f);
             Ui.Label(chartCard,
                 Ui.Paint("━ history", Ui.TextColor) + "    " + Ui.Paint("┅ forecast", ForecastColor) +
                 "    " + Ui.Paint("▒ 80% range", ForecastColor) +
-                "    scale " + Short(_chart.MinY) + " – " + Short(_chart.MaxY) +
                 "    New buildings and vehicles are not included.", 11, color: Ui.SubtleColor);
 
             Ui.Heading(_finance, "Month by month");
@@ -164,9 +191,7 @@ namespace ForecastMod.UI.Native
 
         private static void Stat(Transform parent, string title, string value, float width)
         {
-            Transform col = Ui.Column(parent, 0f);
-            if (width > 0) col.gameObject.AddComponent<LayoutElement>().preferredWidth = width;
-            else col.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
+            Transform col = width > 0 ? Ui.FixedColumn(parent, width, 2f) : Ui.FlexibleColumn(parent, 2f);
             Ui.Label(col, title.ToUpper(), 10, bold: true, color: Ui.SubtleColor);
             Ui.Label(col, value, width > 0 ? 16 : 12, bold: width > 0);
         }
@@ -226,7 +251,7 @@ namespace ForecastMod.UI.Native
             chart.FitBounds();
             chart.MinX = -HistoryDays;
             _chart = chart;
-            _chartTexture = chart.Render(ChartW, ChartH, _chartTexture);
+            _chartTexture = chart.Render(PlotW, ChartH, _chartTexture);
         }
 
         // ---------------- Demand ----------------
@@ -234,26 +259,24 @@ namespace ForecastMod.UI.Native
         private void BuildDemand(DemandForecastResult f)
         {
             Ui.Heading(_demand, "Cities you deliver to");
-            if (f.Served.Count == 0) Ui.Label(_demand, "None yet.", color: Ui.SubtleColor);
+            if (f.Served.Count == 0) Ui.Empty(_demand, "None yet.");
             foreach (DemandForecastEntry e in f.Served)
             {
                 Transform card = Ui.Card(_demand);
 
-                Transform name = Ui.Column(card, 0f);
-                name.gameObject.AddComponent<LayoutElement>().preferredWidth = 150;
+                Transform name = Ui.FixedColumn(card, NameWidth);
                 Ui.Label(name, e.City, 13, bold: true);
                 Ui.Label(name, e.Item + " · level " + e.Level, 11, color: Ui.SubtleColor);
 
-                Transform supply = Ui.Column(card, 3f);
-                supply.gameObject.AddComponent<LayoutElement>().preferredWidth = 120;
+                Transform supply = Ui.FixedColumn(card, RateWidth, 4f);
                 Ui.Label(supply, e.DeliveredLast30Days + " / " + e.DemandPerMonth + " per month", 11);
-                Ui.Bar(supply, e.Coverage, 110);
+                Ui.Bar(supply, e.Coverage, RateWidth - 10);
 
                 string sat = "Satisfaction " + Ui.Bold(Percent(e.Satisfaction));
                 if (Math.Abs(e.SteadySatisfaction - e.Satisfaction) >= 0.1f) sat += "\nheading to " + Percent(e.SteadySatisfaction);
-                Ui.Label(card, sat, 11, width: 110);
+                Ui.Label(card, sat, 11, width: SatisfactionWidth);
 
-                Ui.Label(card, Sampler.Describe(e), 11, color: OutlookColor(e.Outlook));
+                Ui.Label(card, ShortOutlook(e), 11, color: OutlookColor(e.Outlook));
             }
 
             Ui.Heading(_demand, "Per item");
@@ -280,7 +303,7 @@ namespace ForecastMod.UI.Native
         private void BuildProduction(ProductionForecastResult f)
         {
             Ui.Heading(_production, "Item balance (per month)");
-            if (f.Items.Count == 0) Ui.Label(_production, "Nothing produced yet.", color: Ui.SubtleColor);
+            if (f.Items.Count == 0) Ui.Empty(_production, "Nothing produced yet.");
             foreach (ItemBalance b in f.Items)
             {
                 Transform card = Ui.Card(_production, LayoutHelper.Orientation.Vertical);
@@ -289,11 +312,11 @@ namespace ForecastMod.UI.Native
                 if (b.CityWantNowPerMonth > 0) text += " · cities get " + b.DeliveredToCitiesPerMonth + " (want " + b.CityWantNowPerMonth + ")";
                 Ui.Label(card, text, 12);
                 Color color = b.Verdict.StartsWith("SHORT") ? Ui.BadColor : b.Verdict.StartsWith("balanced") ? Ui.GoodColor : Ui.WarnColor;
-                Ui.Label(card, b.Verdict, 11, color: color);
+                Ui.Label(card, Soften(b.Verdict), 11, color: color);
             }
 
             Ui.Heading(_production, "Mines");
-            if (f.Mines.Count == 0) Ui.Label(_production, "None.", color: Ui.SubtleColor);
+            if (f.Mines.Count == 0) Ui.Empty(_production, "No mines.");
             foreach (MineReport m in f.Mines)
             {
                 string extra = m.DaysUntilDepleted is int days ? "deposit lasts " + Sampler.Duration(days) : null;
@@ -301,7 +324,7 @@ namespace ForecastMod.UI.Native
             }
 
             Ui.Heading(_production, "Factories");
-            if (f.Devices.Count == 0) Ui.Label(_production, "None.", color: Ui.SubtleColor);
+            if (f.Devices.Count == 0) Ui.Empty(_production, "No factories.");
             foreach (DeviceReport d in f.Devices)
             {
                 string extra = "inputs " + Percent(d.InputFill) + " full, outputs " + Percent(d.OutputFill) + " full";
@@ -309,20 +332,18 @@ namespace ForecastMod.UI.Native
             }
 
             Ui.Heading(_production, "Warehouses");
-            if (f.Storages.Count == 0) Ui.Label(_production, "None.", color: Ui.SubtleColor);
+            if (f.Storages.Count == 0) Ui.Empty(_production, "No warehouses.");
             foreach (StorageReport s in f.Storages)
             {
                 Transform card = Ui.Card(_production);
-                Transform name = Ui.Column(card, 0f);
-                name.gameObject.AddComponent<LayoutElement>().preferredWidth = 170;
+                Transform name = Ui.FixedColumn(card, NameWidth);
                 Ui.Label(name, s.Name, 12, bold: true);
                 Ui.Label(name, s.Item, 11, color: Ui.SubtleColor);
 
-                Transform fill = Ui.Column(card, 3f);
-                fill.gameObject.AddComponent<LayoutElement>().preferredWidth = 120;
+                Transform fill = Ui.FixedColumn(card, RateWidth, 4f);
                 float fraction = s.Capacity > 0 ? (float)s.Count / s.Capacity : 0f;
                 Ui.Label(fill, s.Count + " / " + s.Capacity, 11);
-                Ui.Bar(fill, fraction, 110, ForecastColor);
+                Ui.Bar(fill, fraction, RateWidth - 10, ForecastColor);
 
                 string trend;
                 Color color = Ui.TextColor;
@@ -346,19 +367,16 @@ namespace ForecastMod.UI.Native
         {
             Transform card = Ui.Card(_production);
 
-            Transform name = Ui.Column(card, 0f);
-            name.gameObject.AddComponent<LayoutElement>().preferredWidth = 170;
+            Transform name = Ui.FixedColumn(card, NameWidth);
             Ui.Label(name, title, 12, bold: true);
             Ui.Label(name, subtitle, 11, color: Ui.SubtleColor);
 
-            Transform rate = Ui.Column(card, 3f);
-            rate.gameObject.AddComponent<LayoutElement>().preferredWidth = 120;
+            Transform rate = Ui.FixedColumn(card, RateWidth, 4f);
             Ui.Label(rate, actual + " of " + max + "/mo (" + Percent(utilization) + ")", 11);
-            Ui.Bar(rate, utilization, 110);
+            Ui.Bar(rate, utilization, RateWidth - 10);
 
-            Transform info = Ui.Column(card, 2f);
-            info.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
-            Ui.Label(info, diagnosis, 11, color: DiagnosisColor(diagnosis));
+            Transform info = Ui.FlexibleColumn(card, 2f);
+            Ui.Label(info, Soften(diagnosis), 11, color: DiagnosisColor(diagnosis));
             if (extra != null) Ui.Label(info, extra, 11, color: Ui.SubtleColor);
         }
 
@@ -384,7 +402,40 @@ namespace ForecastMod.UI.Native
         private static string MonthName(FinanceForecastMonth m) => m.Year + "-" + m.Month.ToString("00");
         private static string Money(double v) => "$" + v.ToString("#,0", CultureInfo.InvariantCulture);
         private static string SignedMoney(double v) => (v >= 0 ? "+" : "−") + Money(Math.Abs(v));
-        private static string Percent(float v) => v.ToString("P0", CultureInfo.InvariantCulture);
+        // "67%", as the game writes it (the invariant "P0" format gives "67 %").
+        private static string Percent(float v) => Mathf.RoundToInt(v * 100f) + "%";
+
+        /// <summary>Card-sized version of the demand outlook; the log keeps the longer sentence.</summary>
+        private static string ShortOutlook(DemandForecastEntry e)
+        {
+            string days = e.DaysUntil is int d ? "~" + d + " days" : "soon";
+            switch (e.Outlook)
+            {
+                case DemandOutlook.LevelUp:
+                    return "Levels up in " + days + "\nthen " + e.NextLevelDemandPerMonth + "/mo (+" + (e.NextLevelDemandPerMonth - e.DemandPerMonth) + ")";
+                case DemandOutlook.LevelUpBlocked:
+                    return "City too small to grow\nneeds " + e.PopulationNeeded.ToString("#,0", CultureInfo.InvariantCulture) +
+                           " people (has " + e.PopulationNow.ToString("#,0", CultureInfo.InvariantCulture) + ")";
+                case DemandOutlook.Stable:
+                    return "Stable\nneeds 40% satisfaction to grow";
+                case DemandOutlook.LevelDown:
+                    return "Drops a level in " + days + "\nunless satisfaction reaches 20%";
+                case DemandOutlook.Closing:
+                    return "Store closes in " + days + "\nunless satisfaction reaches 20%";
+                default:
+                    return "";
+            }
+        }
+
+        /// <summary>"BLOCKED: x" → "Blocked: x". Capitals help when scanning the log, but shout in the window.</summary>
+        private static string Soften(string text)
+        {
+            foreach (string word in new[] { "BLOCKED", "STARVED", "SHORT", "WARNING" })
+            {
+                if (text.StartsWith(word)) return word[0] + word.Substring(1).ToLower() + text.Substring(word.Length);
+            }
+            return text.Length > 0 ? char.ToUpper(text[0]) + text.Substring(1) : text;
+        }
 
         private static string Short(double v)
         {

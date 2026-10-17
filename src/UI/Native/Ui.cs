@@ -36,16 +36,48 @@ namespace ForecastMod.UI.Native
             t.text = text;
 
             LayoutElement le = go.AddComponent<LayoutElement>();
-            if (width > 0) { le.preferredWidth = width; le.minWidth = width; }
+            if (width > 0) { le.preferredWidth = width; le.minWidth = width; le.flexibleWidth = 0f; }
             else le.flexibleWidth = 1f;
             return t;
+        }
+
+        /// <summary>
+        /// A vertical column of exactly <paramref name="width"/> pixels. Its own LayoutElement overrides the
+        /// flexible width of the labels inside, so every card's columns line up.
+        /// </summary>
+        public static Transform FixedColumn(Transform parent, float width, float spacing = 0f)
+        {
+            Transform col = Column(parent, spacing);
+            LayoutElement le = col.gameObject.AddComponent<LayoutElement>();
+            le.minWidth = le.preferredWidth = width;
+            le.flexibleWidth = 0f;
+            return col;
+        }
+
+        /// <summary>A column that takes the remaining width of the row.</summary>
+        public static Transform FlexibleColumn(Transform parent, float spacing = 0f)
+        {
+            Transform col = Column(parent, spacing);
+            LayoutElement le = col.gameObject.AddComponent<LayoutElement>();
+            le.minWidth = 0f;
+            le.flexibleWidth = 1f;
+            return col;
+        }
+
+        /// <summary>A card holding one subtle line, for empty sections ("None.").</summary>
+        public static void Empty(Transform parent, string text)
+        {
+            Label(Card(parent, LayoutHelper.Orientation.Vertical), text, 12, color: SubtleColor);
         }
 
         /// <summary>Small grey uppercase section heading, like the game's table headers.</summary>
         public static Text Heading(Transform parent, string text)
         {
+            // Taller than the text and bottom-aligned, so there is more room above a section than below it.
+            // The first heading of a tab sits at the top, where the scroll view padding is enough.
+            bool first = parent.childCount == 0;
             Text t = Label(parent, text.ToUpper(), 11, bold: true, color: SubtleColor);
-            t.GetComponent<LayoutElement>().minHeight = 22;
+            t.GetComponent<LayoutElement>().minHeight = first ? 16 : 30;
             t.alignment = TextAnchor.LowerLeft;
             return t;
         }
@@ -65,7 +97,8 @@ namespace ForecastMod.UI.Native
         }
 
         /// <summary>A white rounded card, like the rows in the game's city demand list.</summary>
-        public static Transform Card(Transform parent, LayoutHelper.Orientation orientation = LayoutHelper.Orientation.Horizontal)
+        public static Transform Card(Transform parent, LayoutHelper.Orientation orientation = LayoutHelper.Orientation.Horizontal,
+                                     float? spacing = null)
         {
             GameObject go = parent.AddUIChild("Card");
             Panel panel = go.AddComponent<Panel>();
@@ -73,7 +106,10 @@ namespace ForecastMod.UI.Native
             panel.EnabledCorners = PanelCorners.All;
             panel.color = CardColor;
             panel.raycastTarget = false;
-            LayoutHelper.MakeLayoutGroup(go.transform, orientation, new RectOffset(12, 12, 8, 8), 12f, TextAnchor.MiddleLeft);
+            // Columns side by side need a clear gap; stacked lines only a small one.
+            float gap = spacing ?? (orientation == LayoutHelper.Orientation.Horizontal ? 12f : 4f);
+            TextAnchor align = orientation == LayoutHelper.Orientation.Horizontal ? TextAnchor.MiddleLeft : TextAnchor.UpperLeft;
+            LayoutHelper.MakeLayoutGroup(go.transform, orientation, new RectOffset(12, 12, 10, 10), gap, align);
             return go.transform;
         }
 
