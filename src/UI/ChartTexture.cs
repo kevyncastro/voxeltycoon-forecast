@@ -26,10 +26,11 @@ namespace ForecastMod.UI
     /// </summary>
     public class ChartTexture
     {
-        public static readonly Color Background = new Color(0.10f, 0.11f, 0.13f, 1f);
-        public static readonly Color Grid = new Color(1f, 1f, 1f, 0.08f);
-        public static readonly Color Zero = new Color(1f, 0.35f, 0.35f, 0.6f);
-        public static readonly Color Today = new Color(1f, 1f, 1f, 0.35f);
+        // Defaults suit a dark window; the native (light) window overrides them.
+        public Color Background = new Color(0.10f, 0.11f, 0.13f, 1f);
+        public Color Grid = new Color(1f, 1f, 1f, 0.08f);
+        public Color Zero = new Color(1f, 0.35f, 0.35f, 0.6f);
+        public Color Today = new Color(1f, 1f, 1f, 0.35f);
 
         public readonly List<ChartSeries> Series = new List<ChartSeries>();
         public readonly List<ChartBand> Bands = new List<ChartBand>();

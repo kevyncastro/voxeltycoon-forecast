@@ -25,9 +25,12 @@ The version stays at 0.1.0 during initial development. All changes are listed un
   (full speed, blocked, starved, idle); days until each mine's deposit runs out; warehouse stock trends
   with days until empty or full; and a per-item balance of production vs factory and city needs that says
   whether you need more producers (and roughly how many), or whether transport is the bottleneck.
-- In-game forecast window, opened and closed with F6, with Finance, Demand and Production tabs.
-  The Finance tab has a cash chart: 180 days of history, the 12-month forecast and its 80% range.
-  Clicks and scrolling over the window don't reach the map behind it.
+- In-game forecast window built with the game's own UI (the same tabbed window style as the City window),
+  with Finance, Demand and Production tabs. Open it with F6 or the "Forecast" button in the toolbar's
+  extra tools menu. The Finance tab has a cash chart: 180 days of history, the 12-month forecast and its
+  80% range.
+- Classic IMGUI version of the window on Shift+F6, kept for comparison until the native window is proven.
+  Clicks and scrolling over it don't reach the map behind it.
 - Daily stock levels of your warehouses and mines are recorded in the savegame (save data version 2;
   saves from version 1 still load).
 

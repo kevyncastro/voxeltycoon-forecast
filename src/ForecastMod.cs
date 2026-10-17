@@ -1,8 +1,11 @@
 using System;
 using System.Reflection;
 using ForecastMod.UI;
+using ForecastMod.UI.Native;
 using UnityEngine;
 using VoxelTycoon;
+using VoxelTycoon.Game.UI.ModernUI;
+using VoxelTycoon.UI;
 using Logger = VoxelTycoon.Logger;
 using VoxelTycoon.Modding;
 using VoxelTycoon.Serialization;
@@ -48,7 +51,18 @@ namespace ForecastMod
                 // Lives in the game scene, so it is destroyed when you leave or reload the game.
                 _windowObject = new GameObject("ForecastMod.Window");
                 _windowObject.AddComponent<ForecastWindow>().History = _history;
-                _logger.Log("Forecast window ready. Press " + ForecastWindow.ToggleKey + " in-game to open it.");
+                NativeForecastWindow.History = _history;
+                _logger.Log("Forecast window ready. Press " + ForecastWindow.ToggleKey + " in-game to open it (Shift+" +
+                            ForecastWindow.ToggleKey + " for the classic window).");
+            }
+            catch (Exception e)
+            {
+                _logger.LogException(e);
+            }
+
+            try
+            {
+                Toolbar.Current.AddButton(FontIcon.FaSolid(""), "Forecast", new ForecastToolbarAction());
             }
             catch (Exception e)
             {

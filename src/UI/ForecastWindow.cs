@@ -62,8 +62,17 @@ namespace ForecastMod.UI
         {
             if (Input.GetKeyDown(ToggleKey) && !InputHelper.IsInputFieldFocused())
             {
-                _visible = !_visible;
-                if (_visible) Refresh();
+                // F6 opens the native window; Shift+F6 opens this older IMGUI window (kept until the native one is proven).
+                if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                {
+                    _visible = !_visible;
+                    if (_visible) Refresh();
+                }
+                else
+                {
+                    try { Native.NativeForecastWindow.Toggle(); }
+                    catch (Exception e) { Debug.LogException(e); }
+                }
             }
 
             if (_visible && LazyManager<TimeManager>.Current.DateTime.Date != _refreshedOn) Refresh();
@@ -100,7 +109,7 @@ namespace ForecastMod.UI
 
             float scale = UiScale;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
-            _rect = GUI.Window(WindowId, _rect, DrawWindow, "Tycoon Forecast   (F6 to close)");
+            _rect = GUI.Window(WindowId, _rect, DrawWindow, "Tycoon Forecast (classic)   (Shift+F6 to close)");
             _rect.x = Mathf.Clamp(_rect.x, 0, Screen.width / scale - _rect.width);
             _rect.y = Mathf.Clamp(_rect.y, 0, Screen.height / scale - _rect.height);
         }

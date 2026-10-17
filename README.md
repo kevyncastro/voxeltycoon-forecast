@@ -28,12 +28,16 @@ The project compiles against the game's own DLLs in `VoxelTycoon_Data\Managed`, 
 | `src/Forecast/FinanceForecast.cs` | 12-month cash projection, 80% range and negative-cash warnings. |
 | `src/Forecast/DemandForecast.cs` | City demand outlook (level up/down, closing) from the game's rules, plus per-item totals. |
 | `src/Forecast/ProductionForecast.cs` | Mine/factory utilization and bottlenecks, deposit depletion, warehouse trends, item balance. |
-| `src/UI/ForecastWindow.cs` | The in-game window (F6): Finance, Demand and Production tabs. Unity IMGUI, plus an invisible UI panel that stops clicks reaching the map. |
+| `src/UI/Native/NativeForecastWindow.cs` | The in-game window (F6 or toolbar button), built on the game's `TabbedRichWindow`. |
+| `src/UI/Native/Ui.cs` | Helpers that build text, cards and progress bars in the game's style. |
+| `src/UI/Native/ForecastToolbarAction.cs` | The "Forecast" toolbar button. |
+| `src/UI/ForecastWindow.cs` | Handles the F6 hotkey, and the classic IMGUI window (Shift+F6), kept until the native window is proven. |
 | `src/UI/ChartTexture.cs` | Draws line charts with a shaded range into a texture. |
 
 ## Using it in-game
 
-Press **F6** to open or close the forecast window. It refreshes once per in-game day while open.
+Press **F6**, or use the **Forecast** button in the toolbar's extra tools menu, to open or close the
+forecast window. It refreshes once per in-game day while open. **Shift+F6** opens the classic window.
 The same reports are also written to `Player.log` when you load a save and at each month end.
 | `mod.json` | Pack metadata. The game skips any `Content` folder without one. |
 
